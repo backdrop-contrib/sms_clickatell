@@ -3,7 +3,7 @@
 /**
  * @file
  * Adds support for sending SMS messages using the Clickatell gateway.
- * Clickatell gateway module for Drupal SMS Framework. Outbound and Inbound.
+ * Clickatell gateway module for Backdrop SMS Framework. Outbound and Inbound.
  *
  * Thanks to diggersf for his great work on the original module.
  *
@@ -50,10 +50,22 @@ function sms_clickatell_gateway_info() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function sms_clickatell_config_info()
+{
+  $prefixes['sms.clickatell.settings'] = array(
+    'label' => t('SMS Clicaktell settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implementation of hook_menu
- * Provides Drupal with path and menu item configuration for this module.
+ * Provides Backdrop with path and menu item configuration for this module.
  *
- * @return array Drupal menu items
+ * @return array Backdrop menu items
  */
 function sms_clickatell_menu() {
   $items = array();
@@ -76,7 +88,7 @@ function sms_clickatell_menu() {
  * Configuration form for gateway module
  *
  * @param array $configuration
- * @return array Drupal form structure
+ * @return array Backdrop form structure
  */
 function sms_clickatell_admin_form($configuration) {
   $form['sms_clickatell_balance'] = array(
@@ -88,7 +100,7 @@ function sms_clickatell_admin_form($configuration) {
   $form['sms_clickatell_ssl'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use SSL Encyption'),
-    '#description' => t('Drupal\'s built-in HTTP client only supports SSL on PHP 4.3 compiled with OpenSSL.'),
+    '#description' => t('Backdrop\'s built-in HTTP client only supports SSL on PHP 4.3 compiled with OpenSSL.'),
     '#default_value' => $configuration['sms_clickatell_ssl'],
   );
   $form['sms_clickatell_api_id'] = array(
@@ -161,13 +173,13 @@ function sms_clickatell_admin_form_validate($form, &$form_state) {
   if (!$result['status']) {
     form_set_error('', t('A Clickatell gateway error occured: @error.', array('@error' => $result['message'])));
   }
-  variable_set('sms_clickatell_session_id_timestamp', 0);
+  config_set('sms.clickatell.settings', 'sms_clickatell_session_id_timestamp', 0);
 }
 
 /**
  * Returns custom additions to be added to the send forms
  *
- * @return array Drupal form structure
+ * @return array Backdrop form structure
  */
 function sms_clickatell_send_form() {
   $form['country'] = array(
@@ -206,7 +218,8 @@ function sms_clickatell_send($number, $message, $options) {
  */
 function sms_clickatell_balance() {
   $result = sms_clickatell_command('getbalance');
-  return str_replace('Credit: ', '', $result['data']);
+  $balance = (!empty($result['data'])) ? $result['data'] : 0;
+  return str_replace('Credit: ', '', $balance);
 }
 
 /**
@@ -313,13 +326,12 @@ function sms_clickatell_command($command = 'auth', $data = array(), $config = NU
   }
 
   // Run the command
-  $http_result = drupal_http_request($scheme .'://api.clickatell.com/http/'. $command .'?'. $query);
+  $http_result = backdrop_http_request($scheme .'://api.clickatell.com/http/'. $command .'?'. $query);
 
   // Check for HTTP errors
-  if ($http_result->error) {
+  if (isset($http_result->error)) {
     return array('status' => FALSE, 'message' => t('An error occured during the HTTP request: @error', array('@error' => $http_result->error)));
   }
-
   if ($http_result->data) {
     // Check for Clickatell errors
     if (strpos($http_result->data, 'ERR') !== FALSE) {
@@ -343,17 +355,19 @@ function sms_clickatell_command($command = 'auth', $data = array(), $config = NU
  * @return str Clickatell session ID
  */
 function sms_clickatell_get_session_id() {
-  if (variable_get('sms_clickatell_session_id_timestamp', 0) < strtotime('-10 mins')) {
+  $config = config('sms.clickatell.settings');
+  if ($config->get('sms_clickatell_session_id_timestamp') < strtotime('-10 mins')) {
     if ($result = sms_clickatell_command()) {
       if ($result['status']) {
-        variable_set('sms_clickatell_session_id', $result['sid']);
-        variable_set('sms_clickatell_session_id_timestamp', time());
+        $config->set('sms_clickatell_session_id', $result['sid']);
+        $config->set('sms_clickatell_session_id_timestamp', time());
+        $config->save();
         watchdog('sms', 'Clickatell session ID refreshed: %sid', array('%sid' => $result['sid']));
       }
     }
   }
 
-  return variable_get('sms_clickatell_session_id', 0);
+  return $config->get('sms_clickatell_session_id');
 }
 
 /**
