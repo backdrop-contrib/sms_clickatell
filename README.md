@@ -25,13 +25,13 @@ the number is 400.
 https://www.clickatell.com/central/manage_products.php
 - Add an HTTP connection:
 - Enter the following information:
--- Name: for example "MySite".
--- IP Lock Down: you may enter the IP of your website to restrict connection.
--- Dial Prefix: example, 33 for France.
--- Callback Type: ???
--- Callback Url: ???
--- Callback Username: ???
--- Callback Password: ???
+  - Name: for example "MySite".
+  - IP Lock Down: you may enter the IP of your website to restrict connection.
+  - Dial Prefix: example, 33 for France.
+  - Callback Type: ???
+  - Callback Url: ???
+  - Callback Username: ???
+  - Callback Password: ???
 - Validate.
 - You API ID is now visible.
 
@@ -45,6 +45,7 @@ complete text.
 Maintainers
 -----------
 Ported to Backdrop by https://github.com/docwilmot
+
 Seeking maintainers
 
 Credits
