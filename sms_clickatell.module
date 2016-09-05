@@ -42,6 +42,7 @@ function sms_clickatell_gateway_info() {
   return array(
     'clickatell' => array(
       'name' => 'Clickatell',
+      'module' => 'sms_clickatell',
       'configure form' => 'sms_clickatell_admin_form',
       'send' => 'sms_clickatell_send',
       'send form' => 'sms_clickatell_send_form',
@@ -54,7 +55,7 @@ function sms_clickatell_gateway_info() {
  */
 function sms_clickatell_config_info()
 {
-  $prefixes['sms.clickatell.settings'] = array(
+  $prefixes['sms.sms_clickatell.settings'] = array(
     'label' => t('SMS Clicaktell settings'),
     'group' => t('Configuration'),
   );
@@ -91,6 +92,14 @@ function sms_clickatell_menu() {
  * @return array Backdrop form structure
  */
 function sms_clickatell_admin_form($configuration) {
+  $configuration += array(
+    'sms_clickatell_ssl' => '',
+    'sms_clickatell_api_id' => '',
+    'sms_clickatell_user' => '',
+    'sms_clickatell_password' => '',
+    'sms_clickatell_from' => '',
+    'sms_clickatell_callback' => '',
+  );
   $form['sms_clickatell_balance'] = array(
     '#type' => 'item',
     '#title' => t('Current balance'),
@@ -173,7 +182,7 @@ function sms_clickatell_admin_form_validate($form, &$form_state) {
   if (!$result['status']) {
     form_set_error('', t('A Clickatell gateway error occured: @error.', array('@error' => $result['message'])));
   }
-  config_set('sms.clickatell.settings', 'sms_clickatell_session_id_timestamp', 0);
+  config_set('sms.sms_clickatell.settings', 'sms_clickatell_session_id_timestamp', 0);
 }
 
 /**
@@ -249,6 +258,12 @@ function sms_clickatell_command($command = 'auth', $data = array(), $config = NU
   if ($config == NULL) {
     $config = $gateway['configuration'];
   }
+  $config += array(
+    'sms_clickatell_ssl' => '',
+    'sms_clickatell_api_id' => '',
+    'sms_clickatell_user' => '',
+    'sms_clickatell_password' => '',
+  );
 
   if ($config['sms_clickatell_ssl']) {
     $scheme = 'https';
@@ -355,7 +370,7 @@ function sms_clickatell_command($command = 'auth', $data = array(), $config = NU
  * @return str Clickatell session ID
  */
 function sms_clickatell_get_session_id() {
-  $config = config('sms.clickatell.settings');
+  $config = config('sms.sms_clickatell.settings');
   if ($config->get('sms_clickatell_session_id_timestamp') < strtotime('-10 mins')) {
     if ($result = sms_clickatell_command()) {
       if ($result['status']) {
